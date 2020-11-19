@@ -1,0 +1,78 @@
+version: '3'
+services:
+  web:
+    build: ./web
+    ports:
+      - '80:80'
+    depends_on:
+      - api
+  reverseproxy:
+    build: ./reverseproxy
+    ports:
+      - '3000:3000'
+    environment:
+      - API_URL=http://api:4000
+      - MICROSERVICE_URL=http://microservice:5000
+    depends_on:
+      - api
+      - microservice
+  api:
+    build: ./api
+    ports:
+      - '4000:4000'
+    environment:
+     # - POSTGRES_CONNECTION_STRINGNG=postgresql://silly:silly@postgres/silly
+      - MYSQL_CONNECTION_STRING=myuser:mypassword@(mysqldb)/silly
+    depends_on:
+      #- postgres
+      - mysqldb
+  microservice:
+    build: ./microservice
+    ports:
+      - '5000:5000'
+    environment:
+      - MYSQL_CONNECTION_STRING=myuser:mypassword@(mysqldb)/silly
+    depends_on:
+      - mysqldb
+  # migrate-postgres:
+  #   build: ./db
+  #   depends_on:
+  #     - postgres
+  migrate-mysql:
+    build: ./db2
+    depends_on:
+      - mysqldb
+  # postgres:
+  #   image: postgres:latest
+  #   expose:
+  #     - '5432'
+  #   ports:
+  #     - '5432:5432'
+  #   volumes:
+  #     - pgdata:/var/lib/postgresql/data
+  #   environment:
+  #     - POSTGRES_USER=silly
+  #     - POSTGRES_PASSWORD=silly
+  #     - POSTGRES_DB=silly  
+  mysqldb:
+    image: mysql:8.0.22
+    expose:
+      - '3306'
+    ports:
+      - '3306:3306'
+    #command: --default-authentication-plugin=mysql_native_password
+    restart: always
+    environment:
+      MYSQL_ROOT_PASSWORD: example
+      MYSQL_DATABASE: silly
+      MYSQL_USER: myuser
+      MYSQL_PASSWORD: mypassword
+    volumes:
+     - "./.mysqldata/db:/var/lib/mysql" # because docker managed volume doesn't work with this image...
+  adminer:
+    image: adminer
+    restart: always
+    ports:
+      - 8080:8080
+volumes:
+  pgdata:
